@@ -1,0 +1,58 @@
+# === Python cache & compiled files ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# === Virtual environment ===
+venv/
+env/
+.venv/
+.env.local
+
+# === IDE and editor settings ===
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === OS generated files ===
+.DS_Store
+Thumbs.db
+
+# === Logs and outputs ===
+
+
+# === Jupyter notebooks checkpoints ===
+.ipynb_checkpoints/
+
+
+# === Model weights / checkpoints ===
+
+checkpoints/
+*.h5
+*.pt
+*.pth
+*.ckpt
+*.weights
+*.onnx
+
+# === Build & packaging ===
+build/
+dist/
+*.egg-info/
+*.egg
+
+# === Environment / dependency files ===
+.env
+*.env
+
+# === Cache folders from tools ===
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache/
+.env.local
