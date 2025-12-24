@@ -32,7 +32,6 @@ Thumbs.db
 
 checkpoints/
 *.h5
-*.pt
 *.pth
 *.ckpt
 *.weights
