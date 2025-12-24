@@ -27,7 +27,7 @@ def main():
     assert abs(torch.norm(img_emb).item() - 1.0) < 1e-3
     assert abs(torch.norm(txt_emb).item() - 1.0) < 1e-3
 
-    print("✅ Encoder sanity check PASSED")
+    print(" Encoder sanity check PASSED")
 
 if __name__ == "__main__":
     main()

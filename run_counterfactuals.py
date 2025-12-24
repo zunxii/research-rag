@@ -27,12 +27,12 @@ QUERY_IMAGE_PATH = "data/images/edema_Image_2.jpg"
 
 
 def main():
-    print("🚀 Loading KB...")
+    print("  Loading KB...")
     index = faiss.read_index(f"{KB_DIR}/index.faiss")
     with open(f"{KB_DIR}/metadata.json") as f:
         metadata = json.load(f)
 
-    print("🚀 Loading encoders + trained fusion...")
+    print("  Loading encoders + trained fusion...")
     encoder = BioMedCLIPEncoder(
         device=DEVICE,
         lora_path="trained_lora"
@@ -47,7 +47,7 @@ def main():
     retriever = StabilityRetriever(index, metadata)
 
     # ---------------- Encode query ----------------
-    print("\n🧠 Encoding query...")
+    print("\ Encoding query...")
 
     img = Image.open(QUERY_IMAGE_PATH).convert("RGB")
 
@@ -56,7 +56,7 @@ def main():
         txt_emb = encoder.encode_text(QUERY_TEXT).unsqueeze(0)
 
     # ---------------- Level 1: Stability ----------------
-    print("\n📊 Running Level 1: Counterfactual Stability...")
+    print("\n Running Level 1: Counterfactual Stability...")
     stability_runner = StabilityRunner(retriever, fusion)
     stability_output = stability_runner.run(img_emb, txt_emb)
 
@@ -64,7 +64,7 @@ def main():
     print(json.dumps(stability_output, indent=2))
 
     # ---------------- Level 2: Diagnostic Scoring ----------------
-    print("\n🧪 Running Level 2: Diagnostic Scoring...")
+    print("\n Running Level 2: Diagnostic Scoring...")
     scorer = CounterfactualScorer()
     scored = scorer.score(stability_output)
 

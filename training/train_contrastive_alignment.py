@@ -106,7 +106,7 @@ def main():
         lora_alpha=16,
         lora_dropout=0.05,
         bias="none",
-        target_modules="all-linear",     # 🔑 CRITICAL FIX
+        target_modules="all-linear",     # CRITICAL FIX
         task_type="FEATURE_EXTRACTION"
     )
 

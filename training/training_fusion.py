@@ -92,7 +92,7 @@ def main():
         dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        collate_fn=fusion_collate_fn,  # ✅ FIX
+        collate_fn=fusion_collate_fn,  # FIX
         num_workers=0
     )
 
@@ -116,10 +116,10 @@ def main():
                 img_emb = encoder.encode_image_batch(images)
                 txt_emb = encoder.encode_text_batch(texts)
 
-            # 🔑 Single fusion (correct)
+            #  Single fusion (correct)
             fused = fusion(img_emb, txt_emb)
 
-            # 🔑 Align fused → text space
+            #  Align fused → text space
             loss = contrastive_loss(fused, txt_emb, TEMPERATURE)
 
             optimizer.zero_grad()
@@ -131,7 +131,7 @@ def main():
         print(f"Epoch {epoch+1} | Loss: {total_loss / len(loader):.4f}")
 
     torch.save(fusion.state_dict(), OUTPUT_PATH)
-    print(f"\n✅ Fusion model saved to → {OUTPUT_PATH}")
+    print(f"\n Fusion model saved to → {OUTPUT_PATH}")
 
 if __name__ == "__main__":
     main()
