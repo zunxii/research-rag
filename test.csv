@@ -1,5 +1,0 @@
-Question,Question_summ,image_path,category,context,description
-What is shown?,Blue fingers,data/images/cyanosis_Image_1.jpg,cyanosis,bluish discoloration observed,bluish discoloration of distal fingertips
-What abnormality?,Swollen ankle,data/images/edema_Image_1.jpg,edema,swelling noted around joint,swollen ankle with pitting
-Is this normal?,Normal image,data/images/normal.jpg,normal,no abnormal findings,normal appearance of skin
-
