@@ -1,17 +1,8 @@
-def evidence_diversity_constraint(
-    retrieved_metadata: list
-):
-    images = set(
-        m["metadata"]["image_path"]
-        for m in retrieved_metadata
-        if "metadata" in m
-    )
+from typing import Dict
 
-    cases = set(
-        m["metadata"]["case_id"]
-        for m in retrieved_metadata
-        if "metadata" in m
-    )
+def evidence_diversity_constraint(retrieved_metadata: list) -> Dict:
+    images = {m["image_path"] for m in retrieved_metadata}
+    cases = {m["case_id"] for m in retrieved_metadata}
 
     if len(images) < 5:
         level = "low"
@@ -22,6 +13,6 @@ def evidence_diversity_constraint(
 
     return {
         "level": level,
-        "unique_images": len(images),
-        "unique_cases": len(cases),
+        "unique_images": int(len(images)),
+        "unique_cases": int(len(cases)),
     }

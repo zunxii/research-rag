@@ -1,13 +1,11 @@
-# core/reasoning/constraints/distribution_check.py
-import numpy as np
-from .base import Constraint
+from typing import Dict
 
 def distribution_check_constraint(
     query_distance: float,
     percentile_95: float
-) -> Constraint:
+) -> Dict:
     return {
-        "in_distribution": query_distance <= percentile_95,
-        "distance": round(query_distance, 4),
-        "threshold": round(percentile_95, 4),
+        "in_distribution": bool(query_distance <= percentile_95),
+        "distance": round(float(query_distance), 4),
+        "threshold": round(float(percentile_95), 4),
     }

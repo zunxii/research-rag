@@ -1,17 +1,29 @@
-# core/reasoning/constraints/modality_consistency.py
-import numpy as np
+import torch
+import torch.nn.functional as F
+from typing import Dict
 
 def modality_consistency_constraint(
-    img_emb: np.ndarray,
-    txt_emb: np.ndarray
-):
-    # cosine similarity
-    cross_sim = float(
-        np.dot(img_emb, txt_emb) /
-        (np.linalg.norm(img_emb) * np.linalg.norm(txt_emb) + 1e-9)
-    )
+    img_emb: torch.Tensor,
+    txt_emb: torch.Tensor
+) -> Dict:
+    """
+    Measures how consistent image and text embeddings are.
+    Returns cosine similarity + interpretation band.
+    """
+
+    img_emb = F.normalize(img_emb, dim=-1)
+    txt_emb = F.normalize(txt_emb, dim=-1)
+
+    sim = float((img_emb * txt_emb).sum().item())
+
+    if sim >= 0.75:
+        level = "high"
+    elif sim >= 0.45:
+        level = "moderate"
+    else:
+        level = "low"
 
     return {
-        "consistent": cross_sim >= 0.6,
-        "cross_similarity": round(cross_sim, 4)
+        "cosine_similarity": round(sim, 4),
+        "consistency_level": level,
     }

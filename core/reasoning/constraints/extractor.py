@@ -1,4 +1,3 @@
-# core/reasoning/constraints/extractor.py
 from .cluster_distribution import cluster_distribution_constraint
 from .modality_consistency import modality_consistency_constraint
 from .boundary_analysis import boundary_analysis_constraint

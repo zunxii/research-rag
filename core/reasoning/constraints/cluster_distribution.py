@@ -1,22 +1,23 @@
-# core/reasoning/constraints/cluster_distribution.py
 from collections import Counter
-import numpy as np
-from .base import safe_entropy
+from typing import Dict
 
-def cluster_distribution_constraint(retrieved_metadata: list):
+def cluster_distribution_constraint(retrieved_metadata: list) -> Dict:
+    """
+    Returns soft distribution over diagnosis clusters.
+    Example: { "edema": 0.7, "foot swelling": 0.3 }
+    """
+
     labels = [m["diagnosis_label"] for m in retrieved_metadata]
     counts = Counter(labels)
 
-    total = sum(counts.values())
-    distribution = {
-        k: round(v / total, 4) for k, v in counts.items()
-    }
+    total = sum(counts.values()) or 1
 
-    probs = np.array(list(distribution.values()))
-    entropy = safe_entropy(probs)
+    distribution = {
+        label: round(count / total, 4)
+        for label, count in counts.items()
+    }
 
     return {
         "distribution": distribution,
-        "entropy": round(entropy, 4),
-        "is_concentrated": max(probs) >= 0.5
+        "num_clusters": len(distribution),
     }
