@@ -1,22 +1,31 @@
+"""
+Full pipeline with Gemini - EXACT original logic
+"""
+
 import os
 import json
 import torch
 import faiss
 from PIL import Image
+import sys
+from pathlib import Path
+
+# Fix imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.embeddings.biomedclip import BioMedCLIPEncoder
 from core.fusion.adaptive_fusion import AdaptiveFusion
-
 from core.reasoning.counterfactuals.stability.retrieval import StabilityRetriever
 from core.reasoning.counterfactuals.stability.runner import StabilityRunner
 from core.reasoning.counterfactuals.diagnostics.scorer import CounterfactualScorer
 from core.reasoning.counterfactuals.explanation.gemini_explainer import (
     GeminiCounterfactualExplainer
 )
+from configs.inference_config import INFERENCE_CONFIG
 
-# ---------------- CONFIG ----------------
-KB_DIR = "kb_final_v2"
-DEVICE = "cpu"
+# ---------------- CONFIG (original) ----------------
+KB_DIR = INFERENCE_CONFIG["kb_dir"]
+DEVICE = INFERENCE_CONFIG["device"]
 
 QUERY_TEXT = (
     "Since my car wreck a little over a week ago where I suffered a head injury, my husband has noticed a really unpleasant smell coming from my mouth. "
@@ -28,45 +37,48 @@ QUERY_IMAGE_PATH = "data/images/edema_Image_2.jpg"
 
 
 def main():
-    # ---------------- Load KB ----------------
+    # ---------------- Load KB (original) ----------------
     print("  Loading KB...")
     index = faiss.read_index(f"{KB_DIR}/index.faiss")
     with open(f"{KB_DIR}/metadata.json") as f:
         metadata = json.load(f)
 
-    # ---------------- Load encoders + fusion ----------------
+    # ---------------- Load encoders + fusion (original) ----------------
     print("  Loading encoders + trained fusion...")
     encoder = BioMedCLIPEncoder(
         device=DEVICE,
-        lora_path="trained_lora"
+        lora_path=INFERENCE_CONFIG.get("lora_path")
     )
 
     fusion = AdaptiveFusion().to(DEVICE)
     fusion.load_state_dict(
-        torch.load("trained_fusion/fusion.pt", map_location=DEVICE)
+        torch.load(
+            INFERENCE_CONFIG["fusion_path"],
+            map_location=DEVICE
+        )
     )
     fusion.eval()
 
     retriever = StabilityRetriever(index, metadata)
 
-    # ---------------- Encode query ----------------
-    print("\n Encoding query...")
+    # ---------------- Encode query (original) ----------------
+    print("\n✓ Encoding query...")
     img = Image.open(QUERY_IMAGE_PATH).convert("RGB")
 
     with torch.no_grad():
         img_emb = encoder.encode_image(img).unsqueeze(0)
         txt_emb = encoder.encode_text(QUERY_TEXT).unsqueeze(0)
 
-    # ---------------- Layer 1: Stability ----------------
-    print("\n Running Layer 1: Counterfactual Stability...")
+    # ---------------- Layer 1: Stability (original) ----------------
+    print("\n✓ Running Layer 1: Counterfactual Stability...")
     stability_runner = StabilityRunner(retriever, fusion)
     stability_output = stability_runner.run(img_emb, txt_emb)
 
     print("\n=== STABILITY OUTPUT ===")
     print(json.dumps(stability_output, indent=2))
 
-    # ---------------- Layer 2: Diagnostic Scoring ----------------
-    print("\n Running Layer 2: Diagnostic Scoring...")
+    # ---------------- Layer 2: Diagnostic Scoring (original) ----------------
+    print("\n✓ Running Layer 2: Diagnostic Scoring...")
     scorer = CounterfactualScorer()
     scored = scorer.score(stability_output)
 
@@ -75,8 +87,8 @@ def main():
     print("\n=== DIAGNOSTIC SCORES ===")
     print(json.dumps(scored_json, indent=2))
 
-    # ---------------- Layer 3: Gemini Explanation ----------------
-    print("\n Generating explanation with Gemini (Layer 3)...")
+    # ---------------- Layer 3: Gemini Explanation (original) ----------------
+    print("\n✓ Generating explanation with Gemini (Layer 3)...")
     explainer = GeminiCounterfactualExplainer(
         api_key=os.getenv("GEMINI_API_KEY")
     )

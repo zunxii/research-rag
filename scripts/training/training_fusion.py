@@ -1,3 +1,8 @@
+"""
+Fusion training script - EXACT original logic
+Only imports fixed for proper package structure
+"""
+
 import os
 import csv
 from pathlib import Path
@@ -8,23 +13,28 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from PIL import Image
 
+# Fixed imports
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 from core.embeddings.biomedclip import BioMedCLIPEncoder
 from core.fusion.adaptive_fusion import AdaptiveFusion
+from configs.training_config import FUSION_CONFIG
 
-# ---------------- CONFIG ----------------
-CSV_PATH = "clipsyntel.csv"
-IMAGE_ROOT = "data/images"
-OUTPUT_PATH = "trained_fusion/fusion.pt"
+# ---------------- CONFIG (original) ----------------
+CSV_PATH = FUSION_CONFIG["csv_path"]
+IMAGE_ROOT = FUSION_CONFIG["image_root"]
+OUTPUT_PATH = FUSION_CONFIG["output_path"]
 
-DEVICE = "cpu"
-BATCH_SIZE = 2          # CPU-safe
-EPOCHS = 3
-LR = 1e-4
-TEMPERATURE = 0.07
+DEVICE = FUSION_CONFIG["device"]
+BATCH_SIZE = FUSION_CONFIG["batch_size"]
+EPOCHS = FUSION_CONFIG["epochs"]
+LR = FUSION_CONFIG["lr"]
+TEMPERATURE = FUSION_CONFIG["temperature"]
 
-os.makedirs("trained_fusion", exist_ok=True)
+os.makedirs(Path(OUTPUT_PATH).parent, exist_ok=True)
 
-# ---------------- DATASET ----------------
+# ---------------- DATASET (original) ----------------
 class ClipSyntelFusionDataset(Dataset):
     def __init__(self, csv_path, image_root):
         self.samples = []
@@ -47,19 +57,14 @@ class ClipSyntelFusionDataset(Dataset):
         return len(self.samples)
 
     def __getitem__(self, idx):
-        # IMPORTANT: return raw objects, collate_fn will handle them
         return self.samples[idx]
 
-# ---------------- CUSTOM COLLATE (CRITICAL FIX) ----------------
+# ---------------- CUSTOM COLLATE (original) ----------------
 def fusion_collate_fn(batch):
-    """
-    batch: List[(Path, str)]
-    returns: (List[Path], List[str])
-    """
     image_paths, texts = zip(*batch)
     return list(image_paths), list(texts)
 
-# ---------------- LOSS ----------------
+# ---------------- LOSS (original) ----------------
 def contrastive_loss(a, b, temperature):
     a = F.normalize(a, dim=-1)
     b = F.normalize(b, dim=-1)
@@ -72,12 +77,12 @@ def contrastive_loss(a, b, temperature):
 
     return (loss_ab + loss_ba) / 2
 
-# ---------------- TRAIN ----------------
+# ---------------- TRAIN (original) ----------------
 def main():
     print("Loading frozen encoders...")
     encoder = BioMedCLIPEncoder(device=DEVICE)
 
-    # Freeze encoder completely
+    # Freeze encoder completely (original)
     encoder.model.eval()
     for p in encoder.model.parameters():
         p.requires_grad = False
@@ -92,7 +97,7 @@ def main():
         dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        collate_fn=fusion_collate_fn,  # FIX
+        collate_fn=fusion_collate_fn,
         num_workers=0
     )
 
@@ -106,7 +111,7 @@ def main():
             loader,
             desc=f"Epoch {epoch+1}/{EPOCHS}"
         ):
-            # Load images safely
+            # Load images safely (original)
             images = [
                 Image.open(p).convert("RGB")
                 for p in image_paths
@@ -116,10 +121,10 @@ def main():
                 img_emb = encoder.encode_image_batch(images)
                 txt_emb = encoder.encode_text_batch(texts)
 
-            #  Single fusion (correct)
+            # Single fusion (original)
             fused = fusion(img_emb, txt_emb)
 
-            #  Align fused → text space
+            # Align fused → text space (original)
             loss = contrastive_loss(fused, txt_emb, TEMPERATURE)
 
             optimizer.zero_grad()
@@ -131,7 +136,7 @@ def main():
         print(f"Epoch {epoch+1} | Loss: {total_loss / len(loader):.4f}")
 
     torch.save(fusion.state_dict(), OUTPUT_PATH)
-    print(f"\n Fusion model saved to → {OUTPUT_PATH}")
+    print(f"\n✓ Fusion model saved to → {OUTPUT_PATH}")
 
 if __name__ == "__main__":
     main()

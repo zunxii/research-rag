@@ -1,30 +1,26 @@
+"""
+Single query inference - EXACT original logic
+"""
+
 import json
 import numpy as np
 from pathlib import Path
 import faiss
 import torch
+import sys
+import argparse
+
+# Fix imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.embeddings.biomedclip import BioMedCLIPEncoder
 from core.fusion.adaptive_fusion import AdaptiveFusion
 from core.kb.image_loader import ImageLoader
+from configs.inference_config import INFERENCE_CONFIG
 
 
 # -------------------------
-# CONFIG
-# -------------------------
-KB_DIR = "kb_final_v2"          # MUST match new KB
-DEVICE = "cpu"
-TOP_K = 5
-
-QUERY_TEXT = (
-    "Since my car wreck a little over a week ago where I suffered a head injury, my husband has noticed a really unpleasant smell coming from my mouth. I am 64 and quite a bit overweight. I still have a massive, fluid-filled bump on my head from the impact. I’ve been switching between ice packs and heat to try and get the swelling to go down, but I'm worried because this weird breath isn't normal for me. I've included a photo of the lump for your review"
-)
-
-QUERY_IMAGE = "data/images/edema_Image_2.jpg"  # set None for text-only
-
-
-# -------------------------
-# Load KB
+# Load KB (original)
 # -------------------------
 def load_kb(kb_dir: str):
     kb_dir = Path(kb_dir)
@@ -40,36 +36,46 @@ def load_kb(kb_dir: str):
 
 
 # -------------------------
-# Main
+# Main (original)
 # -------------------------
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--query-text", required=True)
+    parser.add_argument("--query-image", default=None)
+    parser.add_argument("--kb-dir", default=INFERENCE_CONFIG["kb_dir"])
+    parser.add_argument("--top-k", type=int, default=INFERENCE_CONFIG["top_k"])
+    args = parser.parse_args()
+
     print("Loading KB...")
-    index, metadata = load_kb(KB_DIR)
+    index, metadata = load_kb(args.kb_dir)
 
     print("Loading encoder (LoRA) + trained fusion...")
     encoder = BioMedCLIPEncoder(
-        device=DEVICE,
-        lora_path=None
+        device=INFERENCE_CONFIG["device"],
+        lora_path=INFERENCE_CONFIG.get("lora_path")
     )
 
-    fusion = AdaptiveFusion().to(DEVICE)
+    fusion = AdaptiveFusion().to(INFERENCE_CONFIG["device"])
     fusion.load_state_dict(
-        torch.load("trained_fusion/fusion.pt", map_location=DEVICE)
+        torch.load(
+            INFERENCE_CONFIG["fusion_path"],
+            map_location=INFERENCE_CONFIG["device"]
+        )
     )
     fusion.eval()
 
     image_loader = ImageLoader()
 
     # -------------------------
-    # Encode query
+    # Encode query (original)
     # -------------------------
     print("\nEncoding query...")
 
     with torch.no_grad():
-        txt_emb = encoder.encode_text(QUERY_TEXT).unsqueeze(0)
+        txt_emb = encoder.encode_text(args.query_text).unsqueeze(0)
 
-        if QUERY_IMAGE is not None:
-            img = image_loader.load(QUERY_IMAGE)
+        if args.query_image is not None:
+            img = image_loader.load(args.query_image)
             img_emb = encoder.encode_image(img).unsqueeze(0)
         else:
             # text-only query → zero image vector
@@ -81,9 +87,9 @@ def main():
     faiss.normalize_L2(query_np)
 
     # -------------------------
-    # Search
+    # Search (original)
     # -------------------------
-    scores, indices = index.search(query_np, TOP_K)
+    scores, indices = index.search(query_np, args.top_k)
 
     print("\n=== RETRIEVED CASES ===\n")
 

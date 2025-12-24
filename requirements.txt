@@ -1,0 +1,30 @@
+# Core Dependencies
+torch>=1.13.0
+torchvision>=0.14.0
+numpy>=1.21.0
+pillow>=9.0.0
+
+# Model Libraries
+open_clip_torch>=2.20.0
+peft>=0.4.0
+transformers>=4.30.0
+
+# Vector Search
+faiss-cpu>=1.7.4
+
+# NLP
+spacy>=3.5.0
+scispacy>=0.5.0
+
+# LLM Integration
+google-genai>=0.1.0
+
+# Utilities
+pandas>=1.3.0
+tqdm>=4.62.0
+
+# Development
+pytest>=7.0.0
+pytest-cov>=3.0.0
+black>=22.0.0
+flake8>=4.0.0
