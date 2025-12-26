@@ -44,8 +44,6 @@ Examples:
   # Run counterfactual reasoning
   python main.py reason --query-text "..." --query-image "path/to/img.jpg"
   
-  # Evaluate retrieval performance
-  python main.py evaluate-retrieval
   
   # Run all tests
   python main.py test
@@ -84,6 +82,50 @@ Examples:
         "build-kb-dry",
         help="Build dry run KB (calls scripts/kb/build_kb_dry.py)"
     )
+
+    # ========================================
+    # PIPELINE COMMANDS 
+    # ========================================
+    pipeline_parser = subparsers.add_parser(
+        "pipeline",
+        help="Run complete pipeline with all stages"
+    )
+    pipeline_parser.add_argument("--config", help="Path to pipeline config YAML")
+    pipeline_parser.add_argument("--skip-training", action="store_true")
+    pipeline_parser.add_argument("--stages", nargs="+", 
+                                choices=["train", "kb", "eval"],
+                                help="Specific stages to run")
+    
+    # ========================================
+    # COMPREHENSIVE EVALUATION COMMANDS 
+    # ========================================
+    eval_retrieval_parser = subparsers.add_parser(
+        "eval-retrieval",
+        help="Comprehensive retrieval evaluation"
+    )
+    eval_retrieval_parser.add_argument("--kb-dir", default="outputs/kb/kb_final_v2")
+    eval_retrieval_parser.add_argument("--output-dir", default="outputs/evaluation/retrieval")
+    
+    eval_encoders_parser = subparsers.add_parser(
+        "eval-encoders",
+        help="Encoder and fusion evaluation"
+    )
+    eval_encoders_parser.add_argument("--output-dir", default="outputs/evaluation/encoders")
+    
+    eval_counterfactual_parser = subparsers.add_parser(
+        "eval-counterfactual",
+        help="Counterfactual stability evaluation"
+    )
+    eval_counterfactual_parser.add_argument("--kb-dir", default="outputs/kb/kb_final_v2")
+    eval_counterfactual_parser.add_argument("--num-samples", type=int, default=50)
+    eval_counterfactual_parser.add_argument("--output-dir", default="outputs/evaluation/counterfactual")
+    
+    eval_lora_parser = subparsers.add_parser(
+        "eval-lora",
+        help="LoRA fine-tuning impact evaluation"
+    )
+    eval_lora_parser.add_argument("--output-dir", default="outputs/evaluation/lora")
+
     
     # ========================================
     # INFERENCE COMMANDS
@@ -110,13 +152,13 @@ Examples:
         help="Run full pipeline with Gemini explanation"
     )
     
-    # ========================================
-    # EVALUATION COMMANDS
-    # ========================================
-    subparsers.add_parser(
-        "evaluate-retrieval",
-        help="Evaluate retrieval performance"
-    )
+    # # ========================================
+    # # EVALUATION COMMANDS (Altered to avoid confusion)
+    # # ========================================
+    # subparsers.add_parser(
+    #     "evaluate-retrieval",
+    #     help="Evaluate retrieval performance"
+    # )
     
     # ========================================
     # TESTING COMMANDS
@@ -185,9 +227,9 @@ Examples:
         print(" Running: scripts/inference/run_counterfactual_pipeline.py")
         return run_script("scripts/inference/run_counterfactual_pipeline.py")
         
-    elif args.command == "evaluate-retrieval":
-        print(" Running: scripts/evaluation/run_retrieval_eval.py")
-        return run_script("scripts/evaluation/run_retrieval_eval.py")
+    # elif args.command == "evaluate-retrieval": (REMOVED TO AVOID CONFUSION)
+    #     print(" Running: scripts/evaluation/run_retrieval_eval.py")
+    #     return run_script("scripts/evaluation/run_retrieval_eval.py")
         
     elif args.command == "test":
         print(" Running test suite")
@@ -202,6 +244,43 @@ Examples:
             pytest_args.append("tests/")
         
         return pytest.main(pytest_args)
+    elif args.command == "pipeline":
+        print("🚀 Running Pipeline")
+        return run_script("scripts/pipeline/run_pipeline.py", 
+                         _build_pipeline_args(args))
+    
+    elif args.command == "eval-retrieval":
+        print(" Running Retrieval Evaluation")
+        return run_script("scripts/evaluation/retrieval/run_eval.py",
+                         ["--kb-dir", args.kb_dir, "--output-dir", args.output_dir])
+    
+    elif args.command == "eval-encoders":
+        print(" Running Encoder Evaluation")
+        return run_script("scripts/evaluation/encoders/run_eval.py",
+                         ["--output-dir", args.output_dir])
+    
+    elif args.command == "eval-counterfactual":
+        print(" Running Counterfactual Evaluation")
+        return run_script("scripts/evaluation/counterfactual/run_eval.py",
+                         ["--kb-dir", args.kb_dir, 
+                          "--num-samples", str(args.num_samples),
+                          "--output-dir", args.output_dir])
+    
+    elif args.command == "eval-lora":
+        print(" Running LoRA Evaluation")
+        return run_script("scripts/evaluation/lora/run_eval.py",
+                         ["--output-dir", args.output_dir])
+
+def _build_pipeline_args(args):
+    script_args = []
+    if args.config:
+        script_args.extend(["--config", args.config])
+    if args.skip_training:
+        script_args.append("--skip-training")
+    if args.stages:
+        script_args.extend(["--stages"] + args.stages)
+    return script_args
+
 
 
 if __name__ == "__main__":

@@ -1,0 +1,39 @@
+
+# Pipeline Configuration Example
+# customize for your experiments
+
+training:
+  lora:
+    enabled: true
+    epochs: 1
+    lr: 5e-5
+    batch_size: 1
+  
+  fusion:
+    enabled: true
+    epochs: 3
+    lr: 1e-4
+    batch_size: 2
+
+kb_building:
+  enabled: true
+  csv_path: "data/raw/clipsyntel.csv"
+  image_root: "data/images"
+  output_dir: "outputs/kb/kb_final_v2"
+
+evaluation:
+  retrieval:
+    enabled: true
+    modes: ["text", "image", "fusion"]
+    top_k_values: [1, 5, 10, 20]
+  
+  encoders:
+    enabled: true
+  
+  counterfactual:
+    enabled: true
+    num_samples: 50
+    perturbation_scales: [0.01, 0.05, 0.1]
+  
+  lora:
+    enabled: true
