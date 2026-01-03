@@ -3,18 +3,17 @@ import torch.nn.functional as F
 import open_clip
 from typing import List
 from PIL import Image
+from pathlib import Path
+from peft import PeftModel
 
 
 class BioMedCLIPEncoder:
     """
     Production-grade BioMedCLIP encoder (OpenCLIP-based).
 
-    Guarantees:
-    - Stable across OpenCLIP versions
-    - No private attribute access
-    - CPU-safe
-    - LoRA-compatible
-    - Retrieval-safe (cosine space)
+    ✔ Correct OpenCLIP loading
+    ✔ Correct PEFT / LoRA loading
+    ✔ No silent failures
     """
 
     def __init__(
@@ -25,19 +24,41 @@ class BioMedCLIPEncoder:
     ):
         self.device = device
 
+        # ---- Load base OpenCLIP model ----
         self.model, _, self.preprocess = open_clip.create_model_and_transforms(
             model_name
         )
         self.tokenizer = open_clip.get_tokenizer(model_name)
 
+        # ---- Load LoRA adapters (CORRECT WAY) ----
         if lora_path is not None:
-            from peft import PeftModel
-            self.model = PeftModel.from_pretrained(self.model, lora_path)
+            lora_path = Path(lora_path)
+            if not lora_path.exists():
+                raise FileNotFoundError(f"LoRA path not found: {lora_path}")
 
-        self.model.to(self.device)
+            self.model = PeftModel.from_pretrained(
+                self.model,
+                lora_path,
+                is_trainable=False
+            )
+
+        self.model = self.model.to(self.device)
         self.model.eval()
 
-        self.dim = 512  # fixed by BioMedCLIP architecture
+        self.dim = 512  # BioMedCLIP fixed embedding size
+
+        # ---- HARD ASSERTION: LoRA must be active if provided ----
+        if lora_path is not None:
+            lora_norm = sum(
+                p.abs().sum().item()
+                for n, p in self.model.named_parameters()
+                if "lora" in n
+            )
+            if lora_norm == 0.0:
+                raise RuntimeError(
+                    "LoRA adapters loaded but inactive (zero norm). "
+                    "Check target_modules mismatch between training and inference."
+                )
 
     # --------------------------------------------------
     # Utilities

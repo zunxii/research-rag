@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-12-26T17:11:03.551393",
+  "timestamp": "2025-12-27T19:21:34.799407",
   "tests": {
     "embedding_comparison": {
       "distance_l2": 0.0,
@@ -21,19 +21,19 @@
     },
     "alignment_improvement": {
       "base_similarity": 0.40066273510456085,
-      "lora_similarity": 0.40066273510456085,
-      "improvement": 0.0,
-      "improvement_pct": 0.0,
+      "lora_similarity": 0.13685797061771154,
+      "improvement": -0.2638047644868493,
+      "improvement_pct": -65.84210144175357,
       "per_pair": [
         {
           "base": 0.3587632477283478,
-          "lora": 0.3587632477283478,
-          "improvement": 0.0
+          "lora": 0.02544344775378704,
+          "improvement": -0.33331979997456074
         },
         {
           "base": 0.4425622224807739,
-          "lora": 0.4425622224807739,
-          "improvement": 0.0
+          "lora": 0.24827249348163605,
+          "improvement": -0.19428972899913788
         }
       ]
     }

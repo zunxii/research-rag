@@ -1,7 +1,5 @@
 ---
 library_name: peft
-tags:
-- lora
 ---
 
 # Model Card for Model ID
@@ -200,4 +198,4 @@ Carbon emissions can be estimated using the [Machine Learning Impact calculator]
 [More Information Needed]
 ### Framework versions
 
-- PEFT 0.18.0
+- PEFT 0.10.0

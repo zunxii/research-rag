@@ -7,5 +7,5 @@ Embedding Comparison:
 
 Alignment Improvement:
   Base similarity: 0.4007
-  LoRA similarity: 0.4007
-  Improvement: 0.0000
+  LoRA similarity: 0.1369
+  Improvement: -0.2638
