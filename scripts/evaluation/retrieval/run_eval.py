@@ -19,7 +19,8 @@ def main():
     evaluator = RetrievalEvaluator(
         kb_dir=args.kb_dir,
         output_dir=args.output_dir,
-        device=args.device
+        device=args.device,
+        query_csv="data/raw/external_queries.csv"
     )
     
     evaluator.run_all_evaluations()

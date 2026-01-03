@@ -4,6 +4,8 @@ Mode-specific evaluation (text, image, fusion)
 import sys
 from pathlib import Path
 from typing import Dict
+
+from scripts.evaluation.retrieval.query_dataset import ExternalQueryDataset
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 import torch
@@ -20,10 +22,12 @@ from scripts.evaluation.retrieval.metrics import MetricsCalculator
 class ModeEvaluator:
     """Evaluates different retrieval modes"""
     
-    def __init__(self, kb_dir: str, device: str = "cpu"):
+    def __init__(self, kb_dir: str, query_csv, device: str = "cpu"):
         self.device = device
         self.retriever = KBRetriever(kb_dir)
-        self.metadata = self.retriever.metadata
+        self.kb_metadata = self.retriever.metadata
+        self.query_dataset = ExternalQueryDataset(query_csv)
+
         
         # Load models
         self.encoder = BioMedCLIPEncoder(device=device)
@@ -42,39 +46,31 @@ class ModeEvaluator:
         
         self.metrics_calc = MetricsCalculator()
     
-    def evaluate_mode(self, mode: str, top_k: int = 20) -> Dict:
-        """Evaluate a specific mode"""
+    def evaluate_mode(self, mode: str, top_k: int = 20):
         all_metrics = defaultdict(list)
-        
-        for i in tqdm(range(len(self.metadata)), 
-                     desc=f"Evaluating {mode}"):
-            entry = self.metadata[i]
-            label = entry["diagnosis_label"]
-            
-            # Encode query
-            query_emb = self._encode_query(entry, mode)
+
+        for query in tqdm(self.query_dataset, desc=f"Evaluating {mode}"):
+            gt_label = query["label"]
+
+            query_emb = self._encode_query_external(query, mode)
             if query_emb is None:
                 continue
-            
-            # Retrieve
+
             query_np = query_emb.cpu().numpy().reshape(1, -1)
-            _, indices = self.retriever.search(query_np, top_k + 1)
-            indices = [idx for idx in indices if idx != i][:top_k]
-            
-            retrieved = [self.metadata[idx] for idx in indices]
-            
-            # Compute metrics
-            metrics = self.metrics_calc.compute_all_metrics(retrieved, label)
-            
+            _, indices = self.retriever.search(query_np, top_k)
+
+            retrieved = [self.kb_metadata[idx] for idx in indices]
+
+            metrics = self.metrics_calc.compute_all_metrics(
+                retrieved, gt_label
+            )
+
             for k, v in metrics.items():
                 all_metrics[k].append(v)
-        
-        # Average metrics
-        avg_metrics = {k: sum(v) / len(v) for k, v in all_metrics.items()}
-        
+
         return {
-            "metrics": avg_metrics,
-            "num_queries": len(self.metadata)
+            "metrics": {k: sum(v)/len(v) for k,v in all_metrics.items()},
+            "num_queries": len(self.query_dataset)
         }
     
     def _encode_query(self, entry: Dict, mode: str):
@@ -100,3 +96,20 @@ class ModeEvaluator:
                 return self.fusion(img_emb, txt_emb).squeeze(0)
         
         return None
+    def _encode_query_external(self, query, mode):
+        with torch.no_grad():
+            if mode == "text":
+                return self.encoder.encode_text(query["text"])
+
+            elif mode == "image":
+                img = self.image_loader.load(query["image_path"])
+                return self.encoder.encode_image(img)
+
+            elif mode == "fusion":
+                if self.fusion is None:
+                    return None
+                img = self.image_loader.load(query["image_path"])
+                img_emb = self.encoder.encode_image(img).unsqueeze(0)
+                txt_emb = self.encoder.encode_text(query["text"]).unsqueeze(0)
+                return self.fusion(img_emb, txt_emb).squeeze(0)
+

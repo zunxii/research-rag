@@ -13,12 +13,13 @@ from scripts.evaluation.retrieval.analysis import ResultsAnalyzer
 class RetrievalEvaluator:
     """Orchestrates retrieval evaluation"""
     
-    def __init__(self, kb_dir: str, output_dir: str, device: str = "cpu"):
+    def __init__(self, kb_dir: str, query_csv,output_dir: str, device: str = "cpu"):
         self.kb_dir = Path(kb_dir)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.device = device
-        
+        self.query_csv = query_csv
+        self.mode_eval = ModeEvaluator(kb_dir, query_csv, device)
         self.results = {
             "timestamp": datetime.now().isoformat(),
             "kb_dir": str(kb_dir),
@@ -26,7 +27,6 @@ class RetrievalEvaluator:
         }
         
         self.metrics_calc = MetricsCalculator()
-        self.mode_eval = ModeEvaluator(kb_dir, device)
         self.analyzer = ResultsAnalyzer()
     
     def run_all_evaluations(self):
